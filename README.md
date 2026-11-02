@@ -13,7 +13,7 @@ sondagsskolaplay-/
   README.md
 ```
 
-Domänstubbar i API:t: `User`, `Organization`, `Plan`, `Subscription`, `AccessGrant`, `Video`, `Collection` (migrations + Eloquent-relationer, ingen full feature-logik ännu).
+Domänmodeller: `User`, `Organization`, `Plan`, `Subscription`, `AccessGrant`, `Video`, `Collection`.
 
 ## Förutsättningar
 
@@ -37,7 +37,7 @@ cd apps/api
 cp .env.example .env
 php artisan key:generate
 composer install
-php artisan migrate
+php artisan migrate --seed
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
@@ -55,14 +55,35 @@ npm install
 npm run dev
 ```
 
-Öppna `http://localhost:5173`. Vite proxar `/api` och `/sanctum` till Laravel (`localhost:8000`) om `VITE_API_URL` lämnas tom; annars sätt `VITE_API_URL=http://localhost:8000`.
+Öppna `http://localhost:5173`. Vite proxar `/api` och `/sanctum` till Laravel (`localhost:8000`) om `VITE_API_URL` lämnas tom.
 
-## Auth & CORS (stubbe)
+## Admin-MVP (lokalt)
 
-- **Laravel Sanctum** för SPA (cookie/session + CSRF via `statefulApi()`).
-- Stateful hosts styrs av `SANCTUM_STATEFUL_DOMAINS`.
-- CORS: `CORS_ALLOWED_ORIGINS` + `supports_credentials=true` i `config/cors.php`.
-- Full login/register UI kommer i senare faser; `/api/user` kräver `auth:sanctum`.
+Efter `php artisan migrate --seed`:
+
+| | |
+|---|---|
+| URL | http://localhost:5173/login → `/admin` |
+| E-post | `admin@sondagsskolaplay.local` |
+| Lösenord | `password` |
+
+**Endast för lokal utveckling** — byt i produktion.
+
+Admin kan:
+
+- Lista/skapa/redigera **Organization** (församling)
+- Skapa/koppla **User** till org
+- Skapa **Subscription** mot **Plan** och sätta manuell status (`pending`, `active`, `past_due`, `paused`, `ended`, `cancelled`)
+- Tilldela **AccessGrant** till Video eller Collection (urval / resurspaket)
+
+Seed skapar också exempelplaner, videor, collections och två demo-församlingar.
+
+## Auth & CORS
+
+- **Laravel Sanctum** SPA (cookie/session + CSRF via `statefulApi()`)
+- Admin-routes: `auth:sanctum` + `admin` (User.role = `admin`)
+- Stateful hosts: `SANCTUM_STATEFUL_DOMAINS`
+- CORS: `CORS_ALLOWED_ORIGINS` + `supports_credentials=true`
 
 ## Miljövariabler (placeholders)
 
@@ -71,9 +92,7 @@ Se `apps/api/.env.example`:
 | Nyckel | Syfte |
 |---|---|
 | `DB_*` | Postgres (default) eller SQLite |
-| `VIMEO_CLIENT_ID` | Vimeo API (hemlighet — endast i lokal `.env` / hosting secrets) |
-| `VIMEO_CLIENT_SECRET` | Vimeo API |
-| `VIMEO_ACCESS_TOKEN` | Vimeo API |
+| `VIMEO_CLIENT_ID` / `SECRET` / `ACCESS_TOKEN` | Vimeo — endast i lokal `.env` / secrets |
 | `FRONTEND_URL` / `CORS_ALLOWED_ORIGINS` | SPA-origin |
 | `SANCTUM_STATEFUL_DOMAINS` | Cookie-auth hosts |
 
@@ -85,11 +104,10 @@ I `apps/api/.env`:
 
 ```env
 DB_CONNECTION=sqlite
-# DB_DATABASE=database/database.sqlite
+# DB_DATABASE lämnas tom → database/database.sqlite
 ```
 
-Skapa filen om den saknas: `touch database/database.sqlite`, kör sedan `php artisan migrate`.
-
-## Nästa steg
-
-Se ombyggnadsplanen (SP-1) för fasindelning: admin MVP, kundbibliotek + Vimeo-playback, publik sajt.
+```bash
+touch database/database.sqlite
+php artisan migrate --seed
+```

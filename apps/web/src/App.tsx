@@ -1,63 +1,26 @@
-import { useEffect, useState } from 'react'
-import { fetchHealth, type HealthResponse } from './lib/api'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './lib/auth'
+import { HomePage } from './pages/HomePage'
+import { LoginPage } from './pages/LoginPage'
+import { AdminLayout } from './pages/admin/AdminLayout'
+import { OrganizationDetailPage } from './pages/admin/OrganizationDetailPage'
+import { OrganizationsPage } from './pages/admin/OrganizationsPage'
 import './App.css'
 
-function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    fetchHealth()
-      .then((data) => {
-        if (!cancelled) {
-          setHealth(data)
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Kunde inte nå API')
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
+export default function App() {
   return (
-    <main className="page">
-      <p className="brand">Söndagsskola Play</p>
-      <h1>Stubbe</h1>
-      <p className="lede">
-        Laravel API + React SPA. Domänmodeller och health-check på plats — features kommer i senare
-        faser.
-      </p>
-
-      <section className="status" aria-live="polite">
-        <h2>API-status</h2>
-        {error && <p className="error">{error}</p>}
-        {!error && !health && <p>Kontrollerar…</p>}
-        {health && (
-          <dl>
-            <div>
-              <dt>Status</dt>
-              <dd>{health.status}</dd>
-            </div>
-            <div>
-              <dt>Service</dt>
-              <dd>{health.service}</dd>
-            </div>
-            <div>
-              <dt>Tid</dt>
-              <dd>{health.timestamp}</dd>
-            </div>
-          </dl>
-        )}
-      </section>
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<OrganizationsPage />} />
+            <Route path="organizations/:id" element={<OrganizationDetailPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
-
-export default App
